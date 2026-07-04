@@ -15,11 +15,14 @@ Audit and fix accessibility bugs that AI-generated apps commonly ship. Prioritiz
 
 ## Audit Workflow
 
-1. Inspect shared UI primitives first: form helpers, labels, inputs, selects, comboboxes, buttons, tables, dialogs, sheets, toasts, skeletons, tabs, menus, and layout shells.
-2. Grep the whole codebase for the patterns below. Do not rely on page-by-page skimming.
-3. Fix source components before call sites when the bug is caused by a reusable default.
-4. Map each finding to user impact and, when useful, to a WCAG 2.2 criterion.
-5. Verify with keyboard navigation, browser accessibility tooling, and at least one screen reader pass on the core flows.
+1. Identify the app framework, routing model, rendering model, and UI system: React/Next.js, Vue, Angular, Svelte, plain HTML, shadcn, Radix, MUI, Chakra, Headless UI, or custom primitives.
+2. Inspect shared UI primitives first: form helpers, labels, inputs, selects, comboboxes, buttons, tables, dialogs, sheets, popovers, tooltips, toasts, skeletons, tabs, menus, navigation, page headers, and layout shells.
+3. Grep the whole codebase for the patterns below. Do not rely on page-by-page skimming.
+4. Fix source components before call sites when the bug is caused by a reusable default.
+5. Fix in this order: shared primitives, core user flows, then individual page polish.
+6. Map each finding to user impact and, when useful, to a WCAG 2.2 criterion.
+7. Verify with keyboard navigation, browser accessibility tooling, and at least one screen reader pass on the core flows.
+8. Do not claim full WCAG compliance unless a complete manual audit was performed. Say "improves toward WCAG 2.2 AA" and list remaining verification needs.
 
 Suggested searches:
 
@@ -30,6 +33,20 @@ rg "onClick=|onclick=" .
 rg "title=|outline-none|aria-live|role=.status|role=.alert" .
 rg "<th|TableHead|<Dialog|<Sheet|<Select|Combobox|CommandItem" .
 ```
+
+## Report Format
+
+When reporting an audit or fix pass, use this structure unless the user asks for something different:
+
+- Summary
+- Critical fixes made
+- Serious fixes made
+- Moderate fixes made
+- Remaining risks
+- Manual testing checklist
+- WCAG 2.2 criteria touched
+
+If only automated checks were run, state that clearly. Automated tools can catch many resulting failures, such as unlabeled controls, but they do not reliably identify the shared-component root cause or prove that the whole workflow is usable with assistive technology.
 
 ## Vibecoding Failure Patterns
 
@@ -110,7 +127,7 @@ When an icon is the only visible content, give the button or link an accessible 
 Hand-rolled `Popover` + `Command` selects are not native `<select>` elements. Check that they:
 
 - forward `id`, `aria-label`, and `aria-labelledby` to the actual focusable trigger;
-- expose selection with `aria-selected` or `aria-checked`, not only `data-*`;
+- expose selection with the ARIA state supported by the widget role: `aria-selected` for listbox-style options, or `aria-checked` only for roles that support checked state such as `checkbox` or `menuitemcheckbox`;
 - announce changing counts such as "3 selected" with `aria-live="polite"`;
 - implement the keyboard behavior expected by their role.
 
