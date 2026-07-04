@@ -18,21 +18,42 @@ AI coding assistants often produce UI that is visually plausible but programmati
 
 ## Install
 
-### Claude Code
+### Skills CLI
 
-Install as a personal skill:
+Recommended for agents that support the Open Agent Skills ecosystem:
+
+```bash
+npx skills add Chandrakiranhj/vibecoding-accessibility
+```
+
+This installs the skill from this GitHub repo using the standard `owner/repo` form used by skills.sh.
+
+### Claude Code Manual Install
+
+If you do not use the Skills CLI, install as a personal Claude Code skill:
 
 ```bash
 git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git ~/.claude/skills/vibecoding-accessibility
 ```
 
-Install as a project skill:
+Or install as a project-local Claude Code skill:
 
 ```bash
 git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git .claude/skills/vibecoding-accessibility
 ```
 
 Then ask Claude Code to "audit accessibility", "improve WCAG compliance", "check screen reader support", "fix keyboard navigation", or "make this UI accessible".
+
+### Claude Code Plugin
+
+This repo also includes a Claude Code plugin manifest at `.claude-plugin/plugin.json`. After cloning, you can validate or test it locally:
+
+```bash
+claude plugin validate .
+claude --plugin-dir .
+```
+
+Marketplace installation is separate from this repo and depends on marketplace submission/review.
 
 ### Codex and other agents
 
