@@ -2,6 +2,8 @@
 
 Use this as a compact mapping aid. For normative wording and techniques, use the W3C WCAG 2.2 Recommendation and Quick Reference.
 
+Last verified against the W3C WCAG 2.2 Recommendation on 2026-07-04.
+
 ## Principles
 
 - Perceivable: users can perceive the content.
@@ -124,6 +126,11 @@ Use this as a compact mapping aid. For normative wording and techniques, use the
 | Static page title across routes | 2.4.2 |
 | Heading levels skip or primary heading is hidden | 1.3.1, 2.4.6 |
 | Drag-only reorder has no button alternative | 2.5.7, 2.1.1 |
+| Low-contrast design tokens repeat across pages | 1.4.3, 1.4.11, 2.4.7 |
+| SPA navigation changes content without moving focus | 2.4.3, 2.4.7, 4.1.3 |
+| Visual-only chart has no summary or data fallback | 1.1.1, 1.3.1, 1.4.1 |
+| Non-essential animation ignores reduced motion | 2.3.3 |
+| Modal background remains reachable behind dialog | 2.1.2, 2.4.3, 4.1.2 |
 
 ## Testing Tools
 

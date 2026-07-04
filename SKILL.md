@@ -1,6 +1,6 @@
 ---
 name: vibecoding-accessibility
-description: Audit and fix web accessibility in AI-generated web apps, especially React, Next.js, shadcn/Radix-style component libraries, dashboards, forms, tables, custom selects, AI chat panels, and keyboard-heavy interfaces. Use when asked to improve accessibility, run an a11y audit, meet WCAG 2.2, improve screen reader support, test NVDA/VoiceOver behavior, fix keyboard navigation, add accessible names, repair form labels, or make a UI accessible.
+description: Audit, fix, and prevent accessibility issues in AI-generated web apps, especially React, Next.js, shadcn/Radix-style component libraries, Lovable/v0/Bolt exports, dashboards, forms, charts, custom selects, AI chat panels, and keyboard-heavy interfaces. Use when asked to improve accessibility, run an a11y audit, meet WCAG 2.2, make a site work for blind or keyboard users, test NVDA/VoiceOver behavior, fix contrast, focus, accessible names, form labels, live regions, or build accessible UI. Not for native mobile apps, PDFs, or non-web accessibility audits.
 ---
 
 # Vibecoding Accessibility
@@ -9,7 +9,7 @@ Audit and fix accessibility bugs that AI-generated apps commonly ship. Prioritiz
 
 ## Use The References
 
-- Read `references/A11Y-PATTERNS.md` when implementing a concrete pattern such as form labels, skip links, modals, tabs, error summaries, live regions, or drag alternatives.
+- Read `references/A11Y-PATTERNS.md` when implementing a concrete pattern such as form labels, skip links, modals, tabs, error summaries, live regions, contrast, SPA focus, charts, motion, inert, or drag alternatives.
 - Read `references/WCAG.md` when mapping a finding to WCAG 2.2 or when the user asks about compliance level.
 - Prefer the project's existing component patterns and accessibility helpers when they already solve the same problem correctly.
 
@@ -32,7 +32,22 @@ rg "size=.icon.|aria-label|<button|<Button" .
 rg "onClick=|onclick=" .
 rg "title=|outline-none|aria-live|role=.status|role=.alert" .
 rg "<th|TableHead|<Dialog|<Sheet|<Select|Combobox|CommandItem" .
+rg "text-muted|gray-|slate-|zinc-|neutral-|foreground|background|border|ring" .
+rg "chart|recharts|chart.js|tremor|canvas|svg|motion|animate-|transition-" .
 ```
+
+## Generation Mode
+
+When building new web UI while this skill is active, prevent common failures up front:
+
+- Use native controls before ARIA-heavy custom widgets.
+- Give every form control a connected visible label or an explicit accessible name.
+- Give every icon-only control an `aria-label` and hide decorative icons.
+- Make async states, toasts, validation errors, and AI responses announce with live regions.
+- Keep focus visible, restore focus after dialogs, and move focus intentionally after client-side route changes.
+- Check contrast at the token/component level, not only on isolated pages.
+- Give charts a text summary and a screen-reader-accessible data fallback.
+- Respect reduced motion and use `inert` or an equivalent primitive for modal background content.
 
 ## Report Format
 
@@ -252,14 +267,31 @@ export function usePageTitle(title: string) {
 
 Check for missing `h1`, skipped levels, and headings hidden with responsive `display: none`. The page's primary heading should exist at every viewport. Use CSS classes for visual size; do not pick `h3` just because it looks smaller.
 
+### 12. Design tokens create repeated contrast failures
+
+AI-generated themes often use weak gray text, low-contrast borders, or subtle focus rings everywhere. Fix contrast at the token or shared component level first: CSS variables, Tailwind theme values, button variants, input placeholders, status colors, and focus rings. See `references/A11Y-PATTERNS.md` for contrast workflow details.
+
+### 13. Client-side navigation changes title but not focus
+
+SPAs can update content without moving focus, leaving screen reader users on the old navigation link with no clear announcement that the page changed. After route changes, move focus to the main landmark or page `h1` with `tabIndex={-1}` and keep a descriptive title.
+
+### 14. Charts and dashboards are visual-only
+
+Dashboard generators commonly produce Recharts, Chart.js, Tremor, canvas, or SVG charts that have no useful screen reader alternative. Each chart needs an accessible name, a concise text summary of the insight, and access to the underlying data through a table or disclosure.
+
+### 15. Motion and modal background access are unmanaged
+
+Respect `prefers-reduced-motion` for non-essential animation. For modals, visual focus trapping is not enough: background content should be inert or managed by a proven dialog primitive so keyboard and assistive-technology users do not wander behind the modal.
+
 ## Core Fix Checklist
 
 - Forms: every input has a programmatically associated label; hints and errors use `aria-describedby`; invalid fields use `aria-invalid`.
 - Buttons and links: every control has a name, uses a native element where possible, and has visible focus.
 - Keyboard: all interactive behavior works with Tab, Shift+Tab, Enter, Space, Escape, and arrow keys where the widget pattern requires them.
-- Dynamic UI: loading, errors, toasts, async answers, and selection counts announce appropriately.
-- Visual information: color, position, icon shape, and animation are not the only way information is conveyed.
+- Dynamic UI: loading, errors, toasts, async answers, route changes, and selection counts announce appropriately.
+- Visual information: color, position, icon shape, charts, and animation are not the only way information is conveyed.
 - Layout: pages have descriptive titles, one meaningful `h1`, landmarks, skip links for repeated navigation, logical focus order, and no focus obstruction by sticky UI.
+- Theme: text, UI components, focus rings, placeholder text, and meaningful graphics meet contrast requirements through shared tokens.
 - Media and images: informative images have useful alt text; decorative images use empty alt; audio/video have captions, transcripts, or descriptions as appropriate.
 
 ## Verification
@@ -288,12 +320,15 @@ Critical:
 - Missing focus indicator.
 - Data conveyed only by color.
 - Async responses or errors that are invisible to assistive technology.
+- Client-side route changes with no focus management in core flows.
 
 Serious:
 
 - Static or misleading page titles.
 - Missing `h1`, skipped heading structure, or hidden primary heading.
 - Non-descriptive links.
+- Repeated token-level contrast failures.
+- Visual-only charts in dashboards.
 - Missing skip links or landmarks in navigation-heavy apps.
 - Shared primitives with broken structural defaults.
 
@@ -304,3 +339,4 @@ Moderate:
 - Missing target-size checks.
 - Custom widgets missing expected ARIA states.
 - Loading placeholders named but not announced.
+- Non-essential animation that ignores reduced motion.

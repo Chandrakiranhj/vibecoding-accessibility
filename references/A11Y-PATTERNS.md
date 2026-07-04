@@ -115,6 +115,119 @@ function focusErrorSummary(errors) {
 
 Set focus to the summary on submit when multiple fields fail. If there is only one failing field, focusing that field can be acceptable when the error text is connected with `aria-describedby`.
 
+## Contrast Workflow
+
+Fix recurring contrast problems at the token or component level before patching individual pages.
+
+1. Identify the color system:
+   - Tailwind: `tailwind.config.*`, `app/globals.css`, `src/styles/*`.
+   - CSS variables: `--background`, `--foreground`, `--muted-foreground`, `--border`, `--ring`, status tokens.
+   - Component variants: buttons, badges, inputs, links, focus rings, placeholders, charts.
+2. Check the common pairs:
+   - body text on background;
+   - muted text on cards/popovers;
+   - placeholder text in inputs;
+   - disabled text and controls;
+   - links against page and card backgrounds;
+   - focus ring against the surfaces it appears on;
+   - status colors and chart colors against adjacent backgrounds.
+3. Use WCAG 2.2 contrast thresholds:
+   - normal text: 4.5:1 minimum;
+   - large text: 3:1 minimum;
+   - UI components, focus indicators, and meaningful graphics: 3:1 minimum.
+4. Fix the token or variant, then re-check the screens that consume it.
+
+Example token-level fix:
+
+```css
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --muted-foreground: 215 16% 35%;
+  --ring: 221 83% 42%;
+}
+
+input::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+```
+
+Do not rely on color alone for state. Pair status color with text, icon shape, pattern, or an accessible label.
+
+## SPA Route Focus
+
+Client-side navigation should update both the page title and focus location. Focus the main landmark or the page heading after route changes.
+
+```tsx
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+
+export function MainContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    mainRef.current?.focus();
+  }, [pathname]);
+
+  return (
+    <main id="main-content" ref={mainRef} tabIndex={-1}>
+      {children}
+    </main>
+  );
+}
+```
+
+If focusing the `h1` is a better fit, give it `tabIndex={-1}` and focus that instead. Avoid moving focus on small in-page state changes; reserve this pattern for navigation or route-level content replacement.
+
+## Accessible Charts And Dashboards
+
+Charts need a text alternative that communicates the insight, not just the chart type.
+
+```tsx
+<section aria-labelledby="revenue-chart-title" aria-describedby="revenue-chart-summary">
+  <h2 id="revenue-chart-title">Revenue by month</h2>
+  <p id="revenue-chart-summary">
+    Revenue rose from $82k in January to $121k in June, with the largest increase in April.
+  </p>
+  <div aria-hidden="true">
+    <ResponsiveContainer height={280}>
+      <LineChart data={data}>{/* visual chart */}</LineChart>
+    </ResponsiveContainer>
+  </div>
+  <details>
+    <summary>View chart data</summary>
+    <table>
+      <caption>Revenue by month</caption>
+      <thead>
+        <tr>
+          <th scope="col">Month</th>
+          <th scope="col">Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row) => (
+          <tr key={row.month}>
+            <th scope="row">{row.month}</th>
+            <td>{row.revenue}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </details>
+</section>
+```
+
+For interactive charts, make the same data and actions available without hover, drag, or pointer-only interaction.
+
 ## Live Regions And Notifications
 
 ```html
@@ -196,6 +309,42 @@ function closeModal(dialog, opener, onKeyDown) {
 ```
 
 Give the dialog container `tabindex="-1"` if it may need to receive focus when no focusable child exists.
+
+When building a custom modal, also make background content inert while the modal is open. Prefer a mature dialog primitive that handles this. If implementing directly, apply `inert` to app content outside the modal and remove it on close.
+
+```js
+function setModalBackgroundInert(isOpen) {
+  const appRoot = document.getElementById("app-root");
+  if (!appRoot) return;
+
+  if (isOpen) {
+    appRoot.setAttribute("inert", "");
+  } else {
+    appRoot.removeAttribute("inert");
+  }
+}
+```
+
+Do not set `aria-hidden="true"` on an ancestor that contains the active dialog.
+
+## Reduced Motion
+
+Respect `prefers-reduced-motion` for non-essential animation and parallax.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+For essential motion, provide a non-motion alternative or user setting.
 
 ## Tabs
 
