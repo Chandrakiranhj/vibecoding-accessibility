@@ -1,50 +1,54 @@
 # vibecoding-accessibility
 
-A [Claude Code skill](https://docs.claude.com/en/docs/claude-code/skills) that audits and fixes web accessibility (WCAG 2.2) in AI-generated ("vibecoded") codebases — with a focus on the specific antipatterns AI coding assistants repeatedly introduce, not just generic WCAG advice.
-
-This isn't a generic accessibility checklist. It was distilled from a real audit of a production Next.js + React component-library codebase, where dozens of concrete NVDA-breaking bugs were found and fixed. The skill leads with those **real, recurring failure patterns** — the ones that show up over and over specifically in AI-assisted codebases — before falling back to the full WCAG 2.2 reference.
+A Claude Code / agent skill for auditing and fixing web accessibility in AI-generated codebases. It focuses on the accessibility bugs that look fine in screenshots but fail for keyboard and screen reader users: disconnected labels, unlabeled icon buttons, custom selects with missing semantics, silent loading states, weak table defaults, and async AI responses with no live region.
 
 ## Why this exists
 
-AI coding assistants are good at making UI *look* right and bad at an invisible layer: whether a `<Label>` is actually wired to its `<input>` via `htmlFor`/`id`, whether a decorative icon is `aria-hidden`, whether a custom dropdown exposes ARIA state instead of a `data-*` attribute, whether a loading spinner is in a live region. None of this is visible in a screenshot or a sighted code review — it only shows up when you test with a screen reader, or grep for the pattern deliberately. This skill encodes what to grep for and why.
+AI coding assistants often produce UI that is visually plausible but programmatically thin. In React, Next.js, shadcn/Radix-style component libraries, and dashboard apps, the highest-impact accessibility fixes usually live in shared primitives rather than individual pages. Fixing one `Field`, `TableHead`, `SearchableSelect`, `Dialog`, or `Toast` component can repair many screens at once.
 
 ## What's inside
 
-- **[`SKILL.md`](SKILL.md)** — the skill itself. Leads with 11 "vibecoding failure patterns" (each with a real before/after code fix), then the full WCAG 2.2 POUR framework, a fix-by-impact taxonomy (Critical/Serious/Moderate), and a practical audit workflow.
-- **[`references/WCAG.md`](references/WCAG.md)** — the complete WCAG 2.2 success-criteria table (A/AA/AAA), common ARIA patterns, and what's new in 2.2.
-- **[`references/A11Y-PATTERNS.md`](references/A11Y-PATTERNS.md)** — copy-paste-ready code patterns: modal focus trap, skip link, form labels, error handling, live regions, ARIA tabs, screen-reader keyboard shortcuts.
+- [`SKILL.md`](SKILL.md): the main workflow, high-signal failure patterns, severity guide, and verification checklist.
+- [`references/A11Y-PATTERNS.md`](references/A11Y-PATTERNS.md): implementation patterns for labels, skip links, errors, live regions, modals, tabs, drag alternatives, and screen reader smoke tests.
+- [`references/WCAG.md`](references/WCAG.md): compact WCAG 2.2 A/AA/AAA mapping plus common mappings for AI-generated apps.
 
-## The core insight
+## Install
 
-> In a codebase built with an AI coding assistant, accessibility bugs are not randomly scattered — they cluster in a small number of shared building blocks (a `Field`/`Label` helper, a `Table` wrapper, a `Select`/`Dropdown` primitive, a toast/skeleton system) that get reused dozens of times. Fix the shared component once, and the fix cascades to every consumer — that's a far better use of an audit pass than going file-by-file.
+### Claude Code
 
-## Using this skill
-
-### With Claude Code
-
-Drop this repo's contents into your project or global skills directory:
+Install as a personal skill:
 
 ```bash
-# Global (available in every project)
 git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git ~/.claude/skills/vibecoding-accessibility
-
-# Or project-local
-git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git .agents/skills/accessibility
 ```
 
-Then just ask Claude Code to "audit accessibility," "improve WCAG compliance," "check screen reader support," or "make this accessible" — the skill will be picked up automatically based on its `description` frontmatter.
+Install as a project skill:
 
-### With any other AI coding assistant
+```bash
+git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git .claude/skills/vibecoding-accessibility
+```
 
-`SKILL.md` is plain markdown with a small YAML frontmatter header. Paste its contents (or link the file) into any assistant's context and ask it to apply the patterns to your codebase — nothing here is Claude-specific.
+Then ask Claude Code to "audit accessibility", "improve WCAG compliance", "check screen reader support", "fix keyboard navigation", or "make this UI accessible".
 
-### Manually
+### Codex and other agents
 
-Read [`SKILL.md`](SKILL.md) yourself. The "Vibecoding failure patterns" section alone is a fast, high-signal checklist to run against any AI-assisted frontend before shipping it.
+Place the folder where your agent loads skills, or paste/link `SKILL.md` and the relevant reference file into the agent context. For Codex-style project skills, a typical project-local location is:
+
+```bash
+git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git .agents/skills/vibecoding-accessibility
+```
+
+## Recommended audit flow
+
+1. Inspect shared UI primitives first.
+2. Grep for known bad patterns across the app.
+3. Fix reusable defaults before individual call sites.
+4. Verify with keyboard navigation, automated tooling, and a screen reader smoke test.
+5. Map material findings to WCAG 2.2 when compliance reporting is needed.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [`LICENSE`](LICENSE).
 
 ## Authors
 

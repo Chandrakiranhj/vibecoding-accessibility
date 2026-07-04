@@ -1,233 +1,264 @@
 # Accessibility Code Patterns
 
-Practical, copy-paste-ready patterns for common accessibility requirements. Each pattern is self-contained and linked from the main [SKILL.md](../SKILL.md).
+Use these patterns when implementing concrete fixes. Prefer native HTML and mature component-library primitives before hand-rolled ARIA.
 
----
+## Visually Hidden Text
 
-## Modal focus trap
-
-Trap keyboard focus inside a modal dialog so Tab/Shift+Tab cycle through its focusable elements and Escape closes it.
-
-```javascript
-function openModal(modal) {
-  const focusableElements = modal.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  );
-  const firstElement = focusableElements[0];
-  const lastElement = focusableElements[focusableElements.length - 1];
-
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      if (e.shiftKey && document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    }
-    if (e.key === 'Escape') {
-      closeModal();
-    }
-  });
-
-  firstElement.focus();
+```css
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 ```
 
-The native `<dialog>` element handles focus trapping automatically—prefer it when browser support allows.
-
----
-
-## Skip link
-
-Allows keyboard users to bypass repetitive navigation and jump straight to main content.
+## Skip Link
 
 ```html
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
-  <header><!-- navigation --></header>
-  <main id="main-content" tabindex="-1">
-    <!-- main content -->
-  </main>
+  <header>...</header>
+  <main id="main-content" tabindex="-1">...</main>
 </body>
 ```
 
 ```css
 .skip-link {
   position: absolute;
-  top: -40px;
+  top: 0;
   left: 0;
+  transform: translateY(-120%);
+  z-index: 1000;
+  padding: 0.5rem 1rem;
   background: #000;
   color: #fff;
-  padding: 8px 16px;
-  z-index: 100;
 }
 
 .skip-link:focus {
-  top: 0;
+  transform: translateY(0);
 }
 ```
 
----
-
-## Error handling
-
-Announce errors to screen readers and focus the first invalid field on submit.
+## Form Labels
 
 ```html
-<form novalidate>
-  <div class="field" aria-live="polite">
-    <label for="email">Email</label>
-    <input type="email" id="email"
-           aria-invalid="true"
-           aria-describedby="email-error">
-    <p id="email-error" class="error" role="alert">
-      Please enter a valid email address (e.g., name@example.com)
-    </p>
-  </div>
-</form>
-```
+<!-- Bad: placeholder only -->
+<input type="email" placeholder="Email" />
 
-```javascript
-form.addEventListener('submit', (e) => {
-  const firstError = form.querySelector('[aria-invalid="true"]');
-  if (firstError) {
-    e.preventDefault();
-    firstError.focus();
-
-    const errorSummary = document.getElementById('error-summary');
-    errorSummary.textContent =
-      `${errors.length} errors found. Please fix them and try again.`;
-    errorSummary.focus();
-  }
-});
-```
-
----
-
-## Form labels
-
-Every input needs an associated label—either explicit (`for`/`id`) or implicit (wrapping `<label>`).
-
-```html
-<!-- ❌ No label association -->
-<input type="email" placeholder="Email">
-
-<!-- ✅ Explicit label -->
+<!-- Good: explicit label -->
 <label for="email">Email address</label>
-<input type="email" id="email" name="email"
-       autocomplete="email" required>
+<input id="email" name="email" type="email" autocomplete="email" required />
 
-<!-- ✅ Implicit label -->
-<label>
-  Email address
-  <input type="email" name="email" autocomplete="email" required>
-</label>
-
-<!-- ✅ With instructions -->
+<!-- Good: label plus hint -->
 <label for="password">Password</label>
-<input type="password" id="password"
-       aria-describedby="password-requirements">
-<p id="password-requirements">
-  Must be at least 8 characters with one number.
-</p>
+<input
+  id="password"
+  name="password"
+  type="password"
+  autocomplete="current-password"
+  aria-describedby="password-hint"
+/>
+<p id="password-hint">Use at least 12 characters.</p>
 ```
 
----
-
-## Dragging movements
-
-Any action triggered by dragging must offer a single-pointer alternative (WCAG 2.5.7).
+For grouped controls, use `fieldset` and `legend`.
 
 ```html
-<!-- ❌ Drag-only reorder -->
-<ul class="sortable-list" draggable="true">
-  <li>Item 1</li>
-  <li>Item 2</li>
-</ul>
-
-<!-- ✅ Drag + button alternatives -->
-<ul class="sortable-list">
-  <li>
-    <span>Item 1</span>
-    <button aria-label="Move Item 1 up">↑</button>
-    <button aria-label="Move Item 1 down">↓</button>
-  </li>
-  <li>
-    <span>Item 2</span>
-    <button aria-label="Move Item 2 up">↑</button>
-    <button aria-label="Move Item 2 down">↓</button>
-  </li>
-</ul>
+<fieldset>
+  <legend>Notification preference</legend>
+  <label><input type="radio" name="notify" value="email" /> Email</label>
+  <label><input type="radio" name="notify" value="sms" /> SMS</label>
+</fieldset>
 ```
 
-Also applies to sliders, map panning, colour pickers, and similar drag-based widgets—always provide an equivalent click/tap or keyboard path.
-
----
-
-## ARIA tabs
-
-Tabs require `role="tablist"`, `role="tab"`, and `role="tabpanel"` with proper `aria-selected`, `aria-controls`, and keyboard support.
+## Error Summary And Field Errors
 
 ```html
-<div role="tablist" aria-label="Product information">
-  <button role="tab" id="tab-1" aria-selected="true"
-          aria-controls="panel-1">Description</button>
-  <button role="tab" id="tab-2" aria-selected="false"
-          aria-controls="panel-2" tabindex="-1">Reviews</button>
+<div id="error-summary" tabindex="-1" role="alert" aria-labelledby="error-title">
+  <h2 id="error-title">Fix 2 errors before continuing</h2>
+  <ul>
+    <li><a href="#email">Enter a valid email address.</a></li>
+    <li><a href="#password">Enter your password.</a></li>
+  </ul>
 </div>
-<div role="tabpanel" id="panel-1" aria-labelledby="tab-1">
-  <!-- Panel content -->
-</div>
-<div role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden>
-  <!-- Panel content -->
-</div>
+
+<label for="email">Email address</label>
+<input
+  id="email"
+  name="email"
+  type="email"
+  aria-invalid="true"
+  aria-describedby="email-error"
+/>
+<p id="email-error">Enter a valid email address, such as name@example.com.</p>
 ```
 
-Arrow keys should move focus between tabs; the active tab receives `tabindex="0"` while inactive tabs use `tabindex="-1"`.
+```js
+function focusErrorSummary(errors) {
+  const summary = document.getElementById("error-summary");
+  if (!summary || errors.length === 0) return;
 
----
+  const title = summary.querySelector("#error-title");
+  if (title) {
+    title.textContent = `Fix ${errors.length} ${errors.length === 1 ? "error" : "errors"} before continuing`;
+  }
 
-## Live regions and notifications
+  summary.focus();
+}
+```
 
-Use `aria-live` to announce dynamic content changes to screen readers without moving focus.
+Set focus to the summary on submit when multiple fields fail. If there is only one failing field, focusing that field can be acceptable when the error text is connected with `aria-describedby`.
+
+## Live Regions And Notifications
 
 ```html
-<!-- Status updates (polite — waits for pause in speech) -->
-<div aria-live="polite" aria-atomic="true" class="status">
-  <!-- Content updates announced to screen readers -->
-</div>
-
-<!-- Urgent alerts (assertive — interrupts) -->
-<div role="alert" aria-live="assertive">
-  <!-- Interrupts current announcement -->
-</div>
+<div id="polite-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="assertive-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 ```
 
-```javascript
-function showNotification(message, type = 'polite') {
-  const container = document.getElementById(`${type}-announcer`);
-  container.textContent = '';
-  requestAnimationFrame(() => {
+```js
+function announce(message, urgency = "polite") {
+  const id = urgency === "assertive" ? "assertive-announcer" : "polite-announcer";
+  const container = document.getElementById(id);
+  if (!container) return;
+
+  container.textContent = "";
+  window.requestAnimationFrame(() => {
     container.textContent = message;
   });
 }
 ```
 
-Clear the container before writing to ensure the same message triggers a new announcement.
+Use `role="status"` for non-urgent status and `role="alert"` for urgent errors. Do not overuse assertive announcements.
 
----
+## Modal Dialog
 
-## Screen reader commands
+Prefer a tested dialog primitive or native `<dialog>` where it fits the project. A custom modal needs:
 
-Quick reference for the most common screen reader shortcuts.
+- `role="dialog"` or `role="alertdialog"`;
+- `aria-modal="true"`;
+- `aria-labelledby` pointing to the visible title;
+- initial focus moved into the dialog;
+- Escape support unless the workflow has a strong reason to block it;
+- focus returned to the opener when the dialog closes.
 
-| Action | VoiceOver (Mac) | NVDA (Windows) |
-|--------|-----------------|----------------|
-| Start/Stop | ⌘ + F5 | Ctrl + Alt + N |
-| Next item | VO + → | ↓ |
-| Previous item | VO + ← | ↑ |
+```js
+function openModal(dialog, opener = document.activeElement) {
+  const focusableSelector = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+  ].join(",");
+
+  const focusable = Array.from(dialog.querySelectorAll(focusableSelector));
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  function onKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeModal(dialog, opener, onKeyDown);
+      return;
+    }
+
+    if (event.key !== "Tab" || focusable.length === 0) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  dialog.hidden = false;
+  dialog.addEventListener("keydown", onKeyDown);
+  (first ?? dialog).focus();
+}
+
+function closeModal(dialog, opener, onKeyDown) {
+  dialog.hidden = true;
+  dialog.removeEventListener("keydown", onKeyDown);
+  if (opener && typeof opener.focus === "function") {
+    opener.focus();
+  }
+}
+```
+
+Give the dialog container `tabindex="-1"` if it may need to receive focus when no focusable child exists.
+
+## Tabs
+
+Use the WAI-ARIA APG tabs pattern for full behavior. Minimum structure:
+
+```html
+<div role="tablist" aria-label="Product information">
+  <button role="tab" id="tab-description" aria-selected="true" aria-controls="panel-description">
+    Description
+  </button>
+  <button role="tab" id="tab-reviews" aria-selected="false" aria-controls="panel-reviews" tabindex="-1">
+    Reviews
+  </button>
+</div>
+
+<section role="tabpanel" id="panel-description" aria-labelledby="tab-description">
+  ...
+</section>
+<section role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden>
+  ...
+</section>
+```
+
+Required keyboard behavior:
+
+- Tab moves into and out of the tablist.
+- Left/Right move focus between horizontal tabs.
+- Up/Down move focus between vertical tabs.
+- Home/End may move to first/last tab.
+- Space or Enter activates a tab when activation does not follow focus automatically.
+
+## Dragging Alternatives
+
+Any drag-only action needs a single-pointer and keyboard-accessible alternative.
+
+```html
+<ul>
+  <li>
+    <span>Item 1</span>
+    <button type="button" aria-label="Move Item 1 up">Move up</button>
+    <button type="button" aria-label="Move Item 1 down">Move down</button>
+  </li>
+  <li>
+    <span>Item 2</span>
+    <button type="button" aria-label="Move Item 2 up">Move up</button>
+    <button type="button" aria-label="Move Item 2 down">Move down</button>
+  </li>
+</ul>
+```
+
+Apply the same principle to sliders, map panning, color pickers, canvas tools, and sortable boards.
+
+## Screen Reader Smoke Test
+
+Common shortcuts:
+
+| Action | VoiceOver macOS | NVDA Windows |
+| --- | --- | --- |
+| Start or stop | Command + F5 | Ctrl + Alt + N |
+| Next item | VO + Right Arrow | Down Arrow |
+| Previous item | VO + Left Arrow | Up Arrow |
 | Activate | VO + Space | Enter |
-| Headings list | VO + U, then arrows | H / Shift + H |
-| Links list | VO + U | K / Shift + K |
+| Headings list | VO + U | Insert + F7, then headings |
+| Links list | VO + U | Insert + F7, then links |
+
+Smoke-test at least: page title, headings, labels, errors, table headers, dialog open/close, custom select operation, toast/status messages, loading states, and async AI responses.
