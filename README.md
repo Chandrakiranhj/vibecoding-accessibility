@@ -11,6 +11,10 @@ AI coding assistants often produce UI that is visually plausible but programmati
 - [`SKILL.md`](SKILL.md): the main workflow, high-signal failure patterns, severity guide, and verification checklist.
 - [`references/A11Y-PATTERNS.md`](references/A11Y-PATTERNS.md): implementation patterns for labels, skip links, errors, live regions, modals, tabs, drag alternatives, and screen reader smoke tests.
 - [`references/WCAG.md`](references/WCAG.md): compact WCAG 2.2 A/AA/AAA mapping plus common mappings for AI-generated apps.
+- [`scripts/scan.mjs`](scripts/scan.mjs): zero-dependency static hotspot scanner.
+- [`scripts/contrast.mjs`](scripts/contrast.mjs): zero-dependency CSS token contrast scanner.
+- [`scripts/audit-live.mjs`](scripts/audit-live.mjs): optional Playwright + axe live-page audit wrapper.
+- [`assets/regression-prevention`](assets/regression-prevention): starter lint, CI, and project-instruction guardrails.
 
 ## Install
 
@@ -45,6 +49,21 @@ git clone https://github.com/Chandrakiranhj/vibecoding-accessibility.git .agents
 3. Fix reusable defaults before individual call sites.
 4. Verify with keyboard navigation, automated tooling, and a screen reader smoke test.
 5. Map material findings to WCAG 2.2 when compliance reporting is needed.
+
+## Local checks
+
+```bash
+node scripts/scan.mjs path/to/app
+node scripts/contrast.mjs path/to/app
+```
+
+For live axe checks, install optional dependencies in the app being tested:
+
+```bash
+npm install -D playwright @axe-core/playwright
+npx playwright install chromium
+node scripts/audit-live.mjs http://localhost:3000
+```
 
 ## License
 

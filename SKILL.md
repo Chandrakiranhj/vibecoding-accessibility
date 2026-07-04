@@ -11,6 +11,8 @@ Audit and fix accessibility bugs that AI-generated apps commonly ship. Prioritiz
 
 - Read `references/A11Y-PATTERNS.md` when implementing a concrete pattern such as form labels, skip links, modals, tabs, error summaries, live regions, contrast, SPA focus, charts, motion, inert, or drag alternatives.
 - Read `references/WCAG.md` when mapping a finding to WCAG 2.2 or when the user asks about compliance level.
+- Use `scripts/scan.mjs` and `scripts/contrast.mjs` for a fast local hotspot pass when Node.js is available. Use `scripts/audit-live.mjs` only after the target app is running and optional Playwright/axe dependencies are installed.
+- Use `assets/regression-prevention/` when the user wants ongoing lint, CI, or project-instruction guardrails.
 - Prefer the project's existing component patterns and accessibility helpers when they already solve the same problem correctly.
 
 ## Audit Workflow
